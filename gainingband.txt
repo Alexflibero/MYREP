@@ -1,0 +1,172 @@
+//----------------------------------------------------------------
+//                GainingBand-Strategy 1.5 T
+// mtp = moltiplicatore per definizione takeprofit tramite ATR
+// msl = moltiplicatore per definizione stoploss tramite ATR
+// maxloss = perdita massima per ordine ammessa in valuta dello strumento
+// openlong = 0.1 Trada su Long
+// openshort = 0.1 Trada su Short
+//----------------------------------------------------------------
+//DEFPARAM DrawOnLastBarOnly = true
+//Definizione dei parametri del codice
+once buyprice = 0
+once sellprice = 0
+buysignal = 0
+exlong = 0
+shortsignal = 0
+exshort = 0
+once openedlong = 0
+once openedshort = 0
+voffset0 = 0
+voffset1 = 0
+voffset2 = 0
+once takeprft = 0
+once stopls = 0
+unitsize = 0
+once PriceTP = 0
+once PriceSL = 0
+once tp = 0
+once sl = 0
+
+// Condizioni per entrare su posizioni long
+indibsup = PRTBANDSUP
+indibsdown = PRTBANDSDOWN
+indibsmed = PRTBANDSMEDIUMTERM
+indibsshort = PRTBANDSSHORTTERM
+indimacdZL, indimacdZLsignal,indihisto,dump2 = CALL "MACD ZERO LAG"[12,26,9](close)
+indiaroonup = aroonup[14]
+indiaroondn = aroondown[14]
+//indiDplus = DIplus[14](close)
+//indiDminus= DIminus[14](close)
+//indiADX= ADX[14]
+//Stabilisco parametri di entrata DL
+//unitsize = CALL "ATR MAXMAX STRONG UNITSZ V2.0" [110, 120, maxloss, 3]
+//tp = CALL "ATRTP V2.0" [110, 120, 50, mtp]
+//sl = CALL "ATRSL V2.0" [110, 120, 50, msl]
+//
+//Stabilisco parametri di entrata CC
+ATRvalue=AverageTrueRange[14](close)
+unitsize = Round(maxloss/ATRvalue/ATRscale)
+tp = mtp*ATRvalue
+sl = msl*ATRvalue
+
+//
+//Condizioni di apertura Long + SL e TP
+if openlong = 1 and openedlong = 0 and indibsshort>indibsshort[2] and high>=indibsup and indihisto>0 and indimacdZL>indimacdZLsignal and indimacdZL[2]<0 and indiaroonup>indiaroondn then
+buysignal = 0.1
+exlong = 0
+shortsignal = 0
+exshort = 0
+openedlong = 0.1
+buyprice = close
+PriceTP = buyprice+tp
+PriceSL = buyprice-sl
+voffset1 = (low/100)*99.5
+DRAWARROWUP(barindex, voffset1) coloured(51,255,51)
+voffsetTP = (PriceTP/1000)*1002
+voffsetSL = (PriceSL/1000)*998
+DRAWTEXT("Take Profit",barindex+2,voffsetTP,SansSerif,italic,14)coloured(0,153,0)
+DRAWTEXT("Stop Loss",barindex+2,voffsetSL,SansSerif,italic,14)coloured(204,51,0)
+endif
+
+//Controllo se scattano Sl e TP
+if openedlong = 0.1 and high > PriceTP then
+//voffset1 = (high/1000)*1002
+//voffset2 = (high/1000)*1004
+//DRAWARROW(barindex, voffset1) coloured(51,255,51)
+//DRAWTEXT("TP Long raggiunto", barindex, voffset2) coloured(51,255,51)
+buysignal = 0
+exlong = 0.1
+openedlong = 0
+buyprice = 0
+//TP = 0
+//SL = 0
+endif
+if openedlong = 0.1 and low < PriceSL then
+//voffset1 = (low/100)*998
+//voffset2 = (low/100)*996
+//DRAWARROW(barindex, voffset1) coloured(204,51,0)
+//DRAWTEXT("SL Long raggiunto", barindex, voffset2) coloured(204,51,0)
+buysignal = 0
+exlong = 0.1
+openedlong = 0
+buyprice = 0
+//TP = 0
+//SL = 0
+endif
+
+//Condizioni chiusura parziale Long //and indibsshort crosses under indibsmed
+if openedlong = 0.1 and exlong=0 and close>buyprice and indibsshort<indibsshort[2] and indimacdZL<indimacdZLsignal and indimacdZLsignal<0 and close<open then
+DRAWPOINT(barindex, close, 3) coloured (51,255,51)
+voffset2 = (low/100)*102
+DRAWTEXT("Exit 50%", barindex, voffset2) coloured(51,255,51)
+buysignal = 0
+exlong = 0.2
+//PriceTP = 0
+//PriceSL = 0
+//TP = 0
+//SL = 0
+endif
+
+//Condizioni di apertura Short + SL e TP
+if openshort=1 and openedshort = 0 and indibsshort<indibsshort[2] and low<=indibsdown and indihisto<0 and indimacdZL<indimacdZLsignal and indimacdZL[2]>0 and indiaroonup<indiaroondn then
+buysignal = 0
+exlong = 0
+shortsignal = 0.1
+exshort = 0
+sellprice = close
+PriceTP = sellprice-tp
+PriceSL = sellprice+sl
+voffset1 = (high/100)*100.5
+DRAWARROWDOWN(barindex, voffset1) coloured(204,51,0)
+voffsetTP = (PriceTP/1000)*998
+voffsetSL = (PriceSL/1000)*1002
+DRAWTEXT("Take Profit",barindex+2,voffsetTP,SansSerif,italic,14)coloured(0,153,0)
+DRAWTEXT("Stop Loss",barindex+2,voffsetSL,SansSerif,italic,14)coloured(204,51,0)
+openedshort = 0.1
+endif
+
+//Controllo se scattano Sl e TP
+if openedshort = 0.1 and Low < PriceTP then
+//voffset1 = (low/1000)*998
+//voffset2 = (low/1000)*996
+//DRAWARROW(barindex, voffset1) coloured(51,255,51)
+//DRAWTEXT("TP short raggiunto", barindex, voffset2) coloured(51,255,51)
+shortsignal = 0
+exshort = 0.1
+openedshort = 0
+sellprice = 0
+//TP = 0
+//SL = 0
+endif
+if openedshort = 0.1 and high > PriceSL then
+//voffset1 = (high/1000)*1002
+//voffset2 = (high/1000)*1004
+//DRAWARROW(barindex, voffset1) coloured(204,51,0)
+//DRAWTEXT("SL short raggiunto", barindex, voffset2) coloured(204,51,0)
+shortsignal = 0
+exshort = 0.1
+openedshort = 0
+sellprice = 0
+//TP = 0
+//SL = 0
+endif
+
+//Condizioni chiusura parziale Short //and indibsshort crosses over indibsmed
+if openedshort = 0.1 and exshort=0 and close<sellprice and indibsshort>indibsshort[2] and indimacdZL>indimacdZLsignal and indimacdZLsignal>0 and close>open then
+DRAWPOINT(barindex, close, 3) coloured (204,51,0)
+voffset2 = (low/100)*99
+DRAWTEXT("Exit 50%", barindex, voffset2) coloured(204,51,0)
+shortsignal = 0
+exshort = 0.2
+//PriceTP = 0
+//PriceSL = 0
+//TP = 0
+//SL = 0
+endif
+
+
+
+//DRAWSEGMENT(barindex-1,TP,barindex,TP)coloured(51,255,51)Style(dottedline4)
+//DRAWSEGMENT(barindex-1,SL,barindex,SL)coloured(204,51,0)Style(dottedline4)
+
+return buysignal as "Buy Signal", shortsignal as "Short Signal", exlong as "Exit Long", exshort as "Exit Short", unitsize as "Shares", PriceTP as "TP Price" , PriceSL as "SL Price"
